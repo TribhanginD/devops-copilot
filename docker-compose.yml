@@ -1,0 +1,70 @@
+services:
+
+  # ── AI DevOps Copilot API ─────────────────────────────────────────────────
+  copilot:
+    build: .
+    container_name: devops-copilot
+    restart: unless-stopped
+    ports:
+      - "8000:8000" # FastAPI control plane
+      - "8001:8001" # Prometheus metrics
+    volumes:
+      - ./data:/app/data # SQLite persistence
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: sqlite:///./data/devops_state.db
+      PROMETHEUS_PORT: "8001"
+      # ── Threshold tuning ──────────────────────────────────────────────────
+      ANOMALY_ERROR_RATE_THRESHOLD: "0.10" # flag above 10% error rate
+      ANOMALY_WINDOW_SECONDS: "300" # 5-min rolling window
+      ANOMALY_MIN_LOG_VOLUME: "5" # ignore noisy cold starts
+      MTTD_CEILING_SECONDS: "3600" # cap MTTD histogram at 1h
+      ESCALATION_THRESHOLD_COUNT: "3" # consecutive anomalies → escalate
+      # ── Per-service threshold overrides ───────────────────────────────────
+      THRESHOLD_PAYMENT_GATEWAY_ERROR_RATE: "0.05" # tighter SLA for payments
+      WINDOW_PAYMENT_GATEWAY_SECONDS: "120" # 2-min window for payments
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Prometheus ───────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: devops-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+
+  # ── Grafana ──────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: devops-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: devops123
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:

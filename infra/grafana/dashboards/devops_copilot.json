@@ -1,0 +1,65 @@
+{
+  "title": "DevOps Copilot",
+  "uid": "devops-copilot-main",
+  "schemaVersion": 38,
+  "time": {"from": "now-1h", "to": "now"},
+  "refresh": "15s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Incidents",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "targets": [{"expr": "devops_active_incidents", "legendFormat": "Incidents"}],
+      "options": {"colorMode": "background", "thresholds": {"steps": [{"color": "green", "value": 0}, {"color": "red", "value": 1}]}}
+    },
+    {
+      "id": 2,
+      "title": "MTTD (p50 / p95)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(devops_mttd_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(devops_mttd_seconds_bucket[5m]))", "legendFormat": "p95"}
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Remediation Success vs Failure",
+      "type": "timeseries",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 0},
+      "targets": [
+        {"expr": "rate(devops_remediation_success_total[5m])", "legendFormat": "Success {{service}}"},
+        {"expr": "rate(devops_remediation_failure_total[5m])", "legendFormat": "Failure {{service}}"}
+      ]
+    },
+    {
+      "id": 4,
+      "title": "False Positive Rate",
+      "type": "timeseries",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 4},
+      "targets": [{"expr": "rate(devops_false_positive_total[5m])", "legendFormat": "False Positives/s"}]
+    },
+    {
+      "id": 5,
+      "title": "Tool Call Rate",
+      "type": "timeseries",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 6},
+      "targets": [{"expr": "rate(tool_calls_total[1m])", "legendFormat": "{{tool}}"}]
+    },
+    {
+      "id": 6,
+      "title": "Tool Latency p95 (s)",
+      "type": "timeseries",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 10},
+      "targets": [{"expr": "histogram_quantile(0.95, rate(tool_duration_seconds_bucket[5m]))", "legendFormat": "p95 {{tool}}"}]
+    },
+    {
+      "id": 7,
+      "title": "MTTD Distribution",
+      "type": "histogram",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 12},
+      "targets": [{"expr": "rate(devops_mttd_seconds_bucket[5m])", "legendFormat": "{{le}}"}]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv
+venv/
+ENV/
+env/
+.env
+
+# Databases
+*.db
+*.db-journal
+chroma_db/
+data/*.db
+data/*.db-journal
+
+# Project specific
+.gemini/
+.agents/
+.agent/
+.system_generated/
+infra/grafana/data/
+prometheus_data/
+grafana_data/
+
+# OS
+.DS_Store
+Thumbs.db
